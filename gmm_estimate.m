@@ -1,4 +1,5 @@
 function [mu,sigm,c]=gmm_estimate(X,M,iT,mu,sigm,c,Vm)
+%ĞŞ¸Ä²âÊÔ
 % [mu,sigma,c]=gmm_estimate(X,M,<iT,mu,sigm,c,Vm>)
 % 
 % X   : the column by column data matrix (LxT)
