@@ -1,43 +1,44 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%±¾´úÂëÊÊÓÃÓÚµ¥ÈËµÄËµ»°ÈËÈ·ÈÏ
-%ĞŞ¸Ä²âÊÔ
+%æœ¬ä»£ç é€‚ç”¨äºå•äººçš„è¯´è¯äººç¡®è®¤
+%ä¿®æ”¹æµ‹è¯•
+%ä¿®æ”¹æµ‹è¯•2
 clear all;
 close all;
-MFCC_size=12;%mfccµÄÎ¬Êı
-GMMM_component=16;%GMM component ¸öÊı
+MFCC_size=12;%mfccçš„ç»´æ•°
+GMMM_component=16;%GMM component ä¸ªæ•°
 
-mu_model=zeros(MFCC_size,GMMM_component);%¸ßË¹Ä£ĞÍ ·ÖÁ¿ ¾ùÖµ£¨·µ»ØÒ»¸ö12*16µÄÁã¾ØÕó£©
-sigma_model=zeros(MFCC_size,GMMM_component);%¸ßË¹Ä£ĞÍ ·ÖÁ¿ ·½²î
-weight_model=zeros(GMMM_component);%¸ßË¹Ä£ĞÍ ·ÖÁ¿ È¨ÖØ£¨·µ»ØÒ»¸ö16*16µÄÁã¾ØÕó£©
+mu_model=zeros(MFCC_size,GMMM_component);%é«˜æ–¯æ¨¡å‹ åˆ†é‡ å‡å€¼ï¼ˆè¿”å›ä¸€ä¸ª12*16çš„é›¶çŸ©é˜µï¼‰
+sigma_model=zeros(MFCC_size,GMMM_component);%é«˜æ–¯æ¨¡å‹ åˆ†é‡ æ–¹å·®
+weight_model=zeros(GMMM_component);%é«˜æ–¯æ¨¡å‹ åˆ†é‡ æƒé‡ï¼ˆè¿”å›ä¸€ä¸ª16*16çš„é›¶çŸ©é˜µï¼‰
 
-train_file_path='.\training\';%Ä£ĞÍÑµÁ·ÎÄ¼şÂ·¾¶
-test_file_path='.\testing\';%²âÊÔÎÄ¼şÂ·¾¶
+train_file_path='.\training\';%æ¨¡å‹è®­ç»ƒæ–‡ä»¶è·¯å¾„
+test_file_path='.\testing\';%æµ‹è¯•æ–‡ä»¶è·¯å¾„
 
 all_train_feature=[];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %train model
-FileList=dir(train_file_path);%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓĞÎÄ¼ş
-model_num=1;%×¢²áÄ£ĞÍµÄ¸öÊı
-error_num=0;%Ê¶±ğ´íÎóµÄ¸öÊı
+FileList=dir(train_file_path);%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
+model_num=1;%æ³¨å†Œæ¨¡å‹çš„ä¸ªæ•°
+error_num=0;%è¯†åˆ«é”™è¯¯çš„ä¸ªæ•°
 
-%¸ÃÂ·¾¶ÏÂÊÇ·ñÊÇÎÄ¼ş¼Ğ
+%è¯¥è·¯å¾„ä¸‹æ˜¯å¦æ˜¯æ–‡ä»¶å¤¹
 for i=1:length(FileList)
     if(FileList(i).isdir==1&&~strcmp(FileList(i).name,'.')&&~strcmp(FileList(i).name,'..'))
-        all_model_name{model_num,1}=FileList(i).name;%´æ´¢Ä£ĞÍÃû³Æ
+        all_model_name{model_num,1}=FileList(i).name;%å­˜å‚¨æ¨¡å‹åç§°
         fprintf('Train:%s\n',all_model_name{model_num,1});
         one_train_file_path=[train_file_path  all_model_name{model_num,1} '\'];
-        all_train_file=dir(fullfile(one_train_file_path,'/*.wav'));%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓĞÎÄ¼ş
+        all_train_file=dir(fullfile(one_train_file_path,'/*.wav'));%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
         all_train_feature = [];
         for j=1:length(all_train_file)
-            file_name=all_train_file(j).name;%wavÎÄ¼şÃû
+            file_name=all_train_file(j).name;%wavæ–‡ä»¶å
             train_file=[one_train_file_path file_name];
            % fprintf('  train file:%s\n',train_file);
             [wav_data ,fs]=audioread(train_file);
             train_feature=melcepst(wav_data ,fs);
-            all_train_feature=[all_train_feature;train_feature];%ÕâÀïtrain_featureµÄÎ¬¶ÈÎª340*12µÄÔ­Òò£¬Ö÷ÒªÊÇ¶ÔÓïÒô½øĞĞ·ÖÖ¡´¦ÀíµÄÊ±ºòµÄ²½³¤Ñ¡ÔñËù¾ö¶¨µÄ
+            all_train_feature=[all_train_feature;train_feature];%è¿™é‡Œtrain_featureçš„ç»´åº¦ä¸º340*12çš„åŸå› ï¼Œä¸»è¦æ˜¯å¯¹è¯­éŸ³è¿›è¡Œåˆ†å¸§å¤„ç†çš„æ—¶å€™çš„æ­¥é•¿é€‰æ‹©æ‰€å†³å®šçš„
         end
-        dirName=['.\model\' all_model_name{model_num,1} '\'];%³õÊ¼µÄmodel_numÎª1
-        [mu_model,sigma_model,weight_model]=gmm_estimate(all_train_feature',GMMM_component);%train_featureµÄÎ¬¶ÈÎª340*12£¬¶øall_train_featureµÄÎ¬¶ÈÎª1995*12,ĞĞÊı³ÊÏÖ´ó¸Å6±¶µÄ×´Ì¬£¬ÕâÊÇÒòÎªÔÚÑµÁ·ÓïÒôÄ£ĞÍµÄÊ±ºò£¬Ò»¸öÈËÊäÈëÁË6ÌõÓïÒô
+        dirName=['.\model\' all_model_name{model_num,1} '\'];%åˆå§‹çš„model_numä¸º1
+        [mu_model,sigma_model,weight_model]=gmm_estimate(all_train_feature',GMMM_component);%train_featureçš„ç»´åº¦ä¸º340*12ï¼Œè€Œall_train_featureçš„ç»´åº¦ä¸º1995*12,è¡Œæ•°å‘ˆç°å¤§æ¦‚6å€çš„çŠ¶æ€ï¼Œè¿™æ˜¯å› ä¸ºåœ¨è®­ç»ƒè¯­éŸ³æ¨¡å‹çš„æ—¶å€™ï¼Œä¸€ä¸ªäººè¾“å…¥äº†6æ¡è¯­éŸ³
         if ~exist( dirName, 'dir')
             mkdir(dirName);
         end
@@ -49,33 +50,33 @@ for i=1:length(FileList)
 end
 save('.\model\all_model_name.mat','all_model_name');
 
-all_model_name=importdata('.\model\all_model_name.mat');%´ÓÉÏÃæÑµÁ·Êı¾İÊ±±£´æµÄÄ£ĞÍÎÄ¼şĞÅÏ¢ÖĞ¶ÁÈ¡Ä£ĞÍÎÄ¼şĞÅÏ¢
+all_model_name=importdata('.\model\all_model_name.mat');%ä»ä¸Šé¢è®­ç»ƒæ•°æ®æ—¶ä¿å­˜çš„æ¨¡å‹æ–‡ä»¶ä¿¡æ¯ä¸­è¯»å–æ¨¡å‹æ–‡ä»¶ä¿¡æ¯
 model_num=length(all_model_name);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %test
-FileList=dir(test_file_path);%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓĞÎÄ¼ş
-%¸ÃÂ·¾¶ÏÂÊÇ·ñÊÇÎÄ¼ş¼Ğ
+FileList=dir(test_file_path);%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
+%è¯¥è·¯å¾„ä¸‹æ˜¯å¦æ˜¯æ–‡ä»¶å¤¹
 for i=1:length(FileList)
     if(FileList(i).isdir==1&&~strcmp(FileList(i).name,'.')&&~strcmp(FileList(i).name,'..'))
         test_name=FileList(i).name;
         one_test_file_path=[test_file_path  test_name '\'];
-        all_test_file=dir(fullfile(one_test_file_path,'/*.wav'));%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓĞÎÄ¼ş
-        %fprintf('²âÊÔÀàĞÍ£º%s\n',test_name);
+        all_test_file=dir(fullfile(one_test_file_path,'/*.wav'));%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
+        %fprintf('æµ‹è¯•ç±»å‹ï¼š%s\n',test_name);
         for j=1:length(all_test_file)
-            file_name=all_test_file(j).name;%wavÎÄ¼şÃû
+            file_name=all_test_file(j).name;%wavæ–‡ä»¶å
             test_file=[one_test_file_path file_name];
             [wav_data ,fs]=audioread(test_file);
-            test_feature=melcepst(wav_data ,fs);%ÉÏÃæ½ÔÊÇÓëÑµÁ·Ä£ĞÍÊ±Í¬ÑùµÄ²Ù×÷
-            %fprintf('Test£º%s\n',test_file);
-            for k=1:model_num%ÊÇÉÏÊöÑµÁ·Êı¾İÊ±»ñµÃµÄÄ£ĞÍ¸öÊı
+            test_feature=melcepst(wav_data ,fs);%ä¸Šé¢çš†æ˜¯ä¸è®­ç»ƒæ¨¡å‹æ—¶åŒæ ·çš„æ“ä½œ
+            %fprintf('Testï¼š%s\n',test_file);
+            for k=1:model_num%æ˜¯ä¸Šè¿°è®­ç»ƒæ•°æ®æ—¶è·å¾—çš„æ¨¡å‹ä¸ªæ•°
                 model_path=['.\model\' all_model_name{k,1} '\'];
                 mu_model=importdata([model_path 'mu_model.mat']);
                 sigma_model=importdata([model_path 'sigma_model.mat']);
                 weight_model=importdata([model_path 'weight_model.mat']);
-                [lYM, lY] = lmultigauss(test_feature', mu_model, sigma_model, weight_model);%test_feature'±í¾ØÕó×ªÖÃ
-                score(j,k) = mean(lY);%·µ»Ø°üº¬Ã¿ÁĞ¾ùÖµµÄĞĞÏòÁ¿(¸ÃÌõÓïÒô¶ÔµÚk¸öÄ£ĞÍµÄ´ò·Ö)
-                %ÑµÁ·¿âÀïÓĞ44¸öÈËµÄÄ£ĞÍ£¬Ò»¸ö²âÊÔÎÄ¼şÏÂÓĞ18ÌõÓïÒô(ÓĞÈı¸öÈË£¬Ã¿ÈË6ÌõÓïÒô)
+                [lYM, lY] = lmultigauss(test_feature', mu_model, sigma_model, weight_model);%test_feature'è¡¨çŸ©é˜µè½¬ç½®
+                score(j,k) = mean(lY);%è¿”å›åŒ…å«æ¯åˆ—å‡å€¼çš„è¡Œå‘é‡(è¯¥æ¡è¯­éŸ³å¯¹ç¬¬kä¸ªæ¨¡å‹çš„æ‰“åˆ†)
+                %è®­ç»ƒåº“é‡Œæœ‰44ä¸ªäººçš„æ¨¡å‹ï¼Œä¸€ä¸ªæµ‹è¯•æ–‡ä»¶ä¸‹æœ‰18æ¡è¯­éŸ³(æœ‰ä¸‰ä¸ªäººï¼Œæ¯äºº6æ¡è¯­éŸ³)
                 % fprintf('Model:%s  score:%f\n',all_model_name{k,1},score(j,k));
             end
             [max_score,max_id]=max(score(j,:));
