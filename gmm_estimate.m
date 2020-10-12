@@ -1,5 +1,6 @@
 function [mu,sigm,c]=gmm_estimate(X,M,iT,mu,sigm,c,Vm)
-%ĞŞ¸Ä²âÊÔ
+%ä¿®æ”¹æµ‹è¯•
+%ä¿®æ”¹è¿”å›æµ‹è¯•
 % [mu,sigma,c]=gmm_estimate(X,M,<iT,mu,sigm,c,Vm>)
 % 
 % X   : the column by column data matrix (LxT)
@@ -8,32 +9,32 @@ function [mu,sigm,c]=gmm_estimate(X,M,iT,mu,sigm,c,Vm)
 % mu  : initial means (LxM)
 % sigm: initial diagonals for the diagonal covariance matrices (LxM)
 % c   : initial weights (Mx1)
-% Vm  : minimal variance factor, by defaut 4 ->minsig=var/(Mï¿½Vmï¿?)
+% Vm  : minimal variance factor, by defaut 4 ->minsig=var/(Mé”Ÿçµmé”Ÿ?)
 
   % *************************************************************
-  % GENERAL PARAMETERSÒ»°ã²ÎÊı
-  [L,T]=size(X);        % data length LĞĞTÁĞ(all_train_featureÊÇÒ»¸ö1995*12£¨mfccÎ¬¶È£©µÄ¾ØÕó)
-  varL=var(X')';    % variance for each row data; ¼ÆËãÃ¿Ò»ĞĞµÄ·½²î
+  % GENERAL PARAMETERSä¸€èˆ¬å‚æ•°
+  [L,T]=size(X);        % data length Lè¡ŒTåˆ—(all_train_featureæ˜¯ä¸€ä¸ª1995*12ï¼ˆmfccç»´åº¦ï¼‰çš„çŸ©é˜µ)
+  varL=var(X')';    % variance for each row data; è®¡ç®—æ¯ä¸€è¡Œçš„æ–¹å·®
   
-  min_diff_LLH=0.001;   % convergence criteria ÊÕÁ²ĞÔÅĞ±ğ×¼Ôò
+  min_diff_LLH=0.001;   % convergence criteria æ”¶æ•›æ€§åˆ¤åˆ«å‡†åˆ™
 
   % DEFAULTS
-  %narginÊÇmatlabÖĞÔ­ÓĞµÄÒ»¸ö²ÎÊı£¬±íÊ¾µÄÊÇº¯ÊıÊäÈë²ÎÊıµÄÊıÄ¿£¨ÔÚÃ»ÓĞÊäÈëÒ»ÏÂÖµµÄÇé¿öÏÂ£¬Ê¹ÓÃÄ¬ÈÏÖµ£©
+  %narginæ˜¯matlabä¸­åŸæœ‰çš„ä¸€ä¸ªå‚æ•°ï¼Œè¡¨ç¤ºçš„æ˜¯å‡½æ•°è¾“å…¥å‚æ•°çš„æ•°ç›®ï¼ˆåœ¨æ²¡æœ‰è¾“å…¥ä¸€ä¸‹å€¼çš„æƒ…å†µä¸‹ï¼Œä½¿ç”¨é»˜è®¤å€¼ï¼‰
   if nargin<3  iT=10; end   % number of iterations, by defaut 10
-  if nargin<4  mu=X(:,[fix((T-1).*rand(1,M))+1]); end % mu def: M rand vect. TÊÇ12£¨²Î¼û±¾º¯ÊıµÚ14ĞĞ´úÂë£©
-  %½âÊÍ£ºÉÏÊöº¯ÊıfixµÄÒâË¼ÊÇ³¯0ËÄÉáÎåÈë£¬ËùÒÔÉÏÊöÄ¬ÈÏmuÖµÊÇ¶Ô(T-1).*rand(1,M)ËÄÉáÎåÈëºó¼Ó1
-  %½âÊÍ£º(T-1).*rand(1,M)£¬ÕâÀïµÄ".*"±íÊ¾µã³Ë£¨¾ØÕó¸÷¸öÔªËØÓëÁí¾ØÕó¶ÔÓ¦ÔªËØÏà³ËµÃµ½µÄ½á¹û£©£¬ÕâÀïµÄMÊÇÎÒÃÇ´«ÈëµÄ16
-  if nargin<5  sigm=repmat(varL./(M.^2),[1,M]); end % sigm def: same variance varL(XÖĞÃ¿Ò»ĞĞµÄ·½²î)µã³ıMµÄµã³Ë·½
-  %½âÊÍ£ºÕâÀïrepmat±íÊ¾ÖØ¸´¾ØÕóvarL./(M.^2)£¬°ÑMÁĞ¸ö¸Ã¾ØÕóÆ´½Ó³ÉÎª1ĞĞ
-  if nargin<6  c=ones(M,1)./M; end  % c def: same weight 16ĞĞ1ÁĞµÄÈ¨ÖØ¾ØÕó£¨³õÊ¼»¯È«Îª1£©
+  if nargin<4  mu=X(:,[fix((T-1).*rand(1,M))+1]); end % mu def: M rand vect. Tæ˜¯12ï¼ˆå‚è§æœ¬å‡½æ•°ç¬¬14è¡Œä»£ç ï¼‰
+  %è§£é‡Šï¼šä¸Šè¿°å‡½æ•°fixçš„æ„æ€æ˜¯æœ0å››èˆäº”å…¥ï¼Œæ‰€ä»¥ä¸Šè¿°é»˜è®¤muå€¼æ˜¯å¯¹(T-1).*rand(1,M)å››èˆäº”å…¥ååŠ 1
+  %è§£é‡Šï¼š(T-1).*rand(1,M)ï¼Œè¿™é‡Œçš„".*"è¡¨ç¤ºç‚¹ä¹˜ï¼ˆçŸ©é˜µå„ä¸ªå…ƒç´ ä¸å¦çŸ©é˜µå¯¹åº”å…ƒç´ ç›¸ä¹˜å¾—åˆ°çš„ç»“æœï¼‰ï¼Œè¿™é‡Œçš„Mæ˜¯æˆ‘ä»¬ä¼ å…¥çš„16
+  if nargin<5  sigm=repmat(varL./(M.^2),[1,M]); end % sigm def: same variance varL(Xä¸­æ¯ä¸€è¡Œçš„æ–¹å·®)ç‚¹é™¤Mçš„ç‚¹ä¹˜æ–¹
+  %è§£é‡Šï¼šè¿™é‡Œrepmatè¡¨ç¤ºé‡å¤çŸ©é˜µvarL./(M.^2)ï¼ŒæŠŠMåˆ—ä¸ªè¯¥çŸ©é˜µæ‹¼æ¥æˆä¸º1è¡Œ
+  if nargin<6  c=ones(M,1)./M; end  % c def: same weight 16è¡Œ1åˆ—çš„æƒé‡çŸ©é˜µï¼ˆåˆå§‹åŒ–å…¨ä¸º1ï¼‰
   if nargin<7  Vm=4; end   % minimum variance factor
   
-  min_sigm=repmat(varL./(Vm.^2*M.^2),[1,M]);   % MINIMUM sigma!×îĞ¡µÄsigma
+  min_sigm=repmat(varL./(Vm.^2*M.^2),[1,M]);   % MINIMUM sigma!æœ€å°çš„sigma
 
   % VARIABLES
-  lgam_m=zeros(T,M);    % prob of each (X:,t) to belong to the kth mixture 12ĞĞ16ÁĞµÄÁã¾ØÕó
-  lB=zeros(T,1);        % log-likelihood 12ĞĞ1ÁĞµÄÁã¾ØÕó 
-  lBM=zeros(T,M);       % log-likelihhod for separate mixtures 12ĞĞ16ÁĞµÄÁã¾ØÕó
+  lgam_m=zeros(T,M);    % prob of each (X:,t) to belong to the kth mixture 12è¡Œ16åˆ—çš„é›¶çŸ©é˜µ
+  lB=zeros(T,1);        % log-likelihood 12è¡Œ1åˆ—çš„é›¶çŸ©é˜µ 
+  lBM=zeros(T,M);       % log-likelihhod for separate mixtures 12è¡Œ16åˆ—çš„é›¶çŸ©é˜µ
 
   old_LLH=-9e99;        % initial log-likelihood -9*(10^99)
 
@@ -42,7 +43,7 @@ function [mu,sigm,c]=gmm_estimate(X,M,iT,mu,sigm,c,Vm)
     % ESTIMATION STEP ****************************************************
     [lBM,lB]=lmultvigauss(X,mu,sigm,c);
     
-    LLH=mean(lB);%mean·µ»Ø°üº¬Ã¿ÁĞ¾ùÖµµÄĞĞÏòÁ¿
+    LLH=mean(lB);%meanè¿”å›åŒ…å«æ¯åˆ—å‡å€¼çš„è¡Œå‘é‡
 
     lgam_m=lBM-repmat(lB,[1,M]);  % logarithmic version
     gam_m=exp(lgam_m);            % linear version           -Equation(1)
