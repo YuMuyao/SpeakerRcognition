@@ -1,42 +1,103 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%æœ¬ä»£ç é€‚ç”¨äºŽå•äººçš„è¯´è¯äººç¡®è®¤
+%±¾´úÂëÊÊÓÃÓÚµ¥ÈËµÄËµ»°ÈËÈ·ÈÏ
 clear all;
 close all;
-MFCC_size=12;%mfccçš„ç»´æ•°
-GMMM_component=16;%GMM component ä¸ªæ•°
+MFCC_size=12;%mfccµÄÎ¬Êý
+GMMM_component=16;%GMM component ¸öÊý
 
-mu_model=zeros(MFCC_size,GMMM_component);%é«˜æ–¯æ¨¡åž‹ åˆ†é‡ å‡å€¼ï¼ˆè¿”å›žä¸€ä¸ª12*16çš„é›¶çŸ©é˜µï¼‰
-sigma_model=zeros(MFCC_size,GMMM_component);%é«˜æ–¯æ¨¡åž‹ åˆ†é‡ æ–¹å·®
-weight_model=zeros(GMMM_component);%é«˜æ–¯æ¨¡åž‹ åˆ†é‡ æƒé‡ï¼ˆè¿”å›žä¸€ä¸ª16*16çš„é›¶çŸ©é˜µï¼‰
+mu_model=zeros(MFCC_size,GMMM_component);%¸ßË¹Ä£ÐÍ ·ÖÁ¿ ¾ùÖµ£¨·µ»ØÒ»¸ö12*16µÄÁã¾ØÕó£©
+sigma_model=zeros(MFCC_size,GMMM_component);%¸ßË¹Ä£ÐÍ ·ÖÁ¿ ·½²î
+weight_model=zeros(GMMM_component);%¸ßË¹Ä£ÐÍ ·ÖÁ¿ È¨ÖØ£¨·µ»ØÒ»¸ö16*16µÄÁã¾ØÕó£©
 
-train_file_path='.\training\';%æ¨¡åž‹è®­ç»ƒæ–‡ä»¶è·¯å¾„
-test_file_path='.\testing\';%æµ‹è¯•æ–‡ä»¶è·¯å¾„
+train_file_path='.\training\';%Ä£ÐÍÑµÁ·ÎÄ¼þÂ·¾¶
+test_file_path='.\testing\';%²âÊÔÎÄ¼þÂ·¾¶
+
 
 all_train_feature=[];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %train model
-FileList=dir(train_file_path);%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
-model_num=1;%æ³¨å†Œæ¨¡åž‹çš„ä¸ªæ•°
-error_num=0;%è¯†åˆ«é”™è¯¯çš„ä¸ªæ•°
+FileList=dir(train_file_path);%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓÐÎÄ¼þ
+model_num=1;%×¢²áÄ£ÐÍµÄ¸öÊý
+error_num=0;%Ê¶±ð´íÎóµÄ¸öÊý
 
-%è¯¥è·¯å¾„ä¸‹æ˜¯å¦æ˜¯æ–‡ä»¶å¤¹
+T = clock; 
+disp([num2str(T(4)),':',num2str(T(5)),':',num2str(T(6))]);
+%FXY-01################
+correct_num=0;
+ubm_y=[];
+ubm_fs=[];
+ubm_file_directory = '.\ubm_file\'; %address of training audio files
+ubm_all_files = dir([ubm_file_directory '*.wav']);
+for ubm_i=1:length(ubm_all_files)
+    [ubm_y_temp, ubm_fs_temp] = audioread(sprintf('%s%s', ubm_file_directory, ubm_all_files(ubm_i).name));
+    ubm_y_temp = ubm_y_temp(1:900000);% Taking minimum of all files to have same input length
+    ubm_fs(ubm_i,1)=ubm_fs_temp;
+    ubm_y(:,ubm_i)=ubm_y_temp;
+end
+
+%%
+ubm_nSpeakers = 4; %number of speakers
+ubm_nDims = 12; % dimensionality of feature vectors
+ubm_nMixtures = 16; % How many mixtures used to generate data
+ubm_nChannels = 1; % Number of channels (sessions) per speaker
+ubm_nFrames = 1000; % Frames per speaker (10 seconds assuming 100 Hz)
+ubm_nWorkers = 2; % Number of parfor workers, if available
+ubm_final_niter = 15;
+ubm_ds_factor = 1;
+rng('default'); % To promot reproducibility.
+ubm_mfccs1=[];
+for ubm_i=1:ubm_nSpeakers
+%     display(i);
+    ubm_mfccs1(:,:,ubm_i) = melcepst(ubm_y(:,ubm_i), ubm_fs(ubm_i));
+end
+
+ubm_mfccsdata=cell(ubm_nSpeakers,ubm_nChannels);
+
+for ubm_j=1:ubm_nSpeakers
+    for ubm_i=1:ubm_nChannels
+        ubm_mfccsdata{ubm_j,ubm_i}=(ubm_mfccs1((ubm_i*(ubm_nFrames)-(ubm_nFrames-1)):ubm_i*ubm_nFrames,:,ubm_j))';
+        ubm_speakerID(ubm_j,ubm_i) = ubm_j;
+    end
+end
+ubm_trainSpeakerData=ubm_mfccsdata;
+ubm = gmm_em(ubm_trainSpeakerData(:), ubm_nMixtures, ubm_final_niter, ubm_ds_factor, ...
+ubm_nWorkers);
+%ubm = gmm_em('ubm.lst',16, 15, 1,8);³¢ÊÔlist·½Ê½µ÷ÓÃÎ¢ÈíµÄº¯ÊýÊ§°Ü,Òª»ùÓÚHTKÆ½Ì¨ÌáÈ¡MFCC²ÎÊý£¨¹Ê³¢ÊÔÓÃcell·½Ê½´«Èë2£©
+%FXY-01################
+T = clock; 
+disp([num2str(T(4)),':',num2str(T(5)),':',num2str(T(6))]);
+
+%¸ÃÂ·¾¶ÏÂÊÇ·ñÊÇÎÄ¼þ¼Ð
 for i=1:length(FileList)
     if(FileList(i).isdir==1&&~strcmp(FileList(i).name,'.')&&~strcmp(FileList(i).name,'..'))
-        all_model_name{model_num,1}=FileList(i).name;%å­˜å‚¨æ¨¡åž‹åç§°
+        all_model_name{model_num,1}=FileList(i).name;%´æ´¢Ä£ÐÍÃû³Æ
         fprintf('Train:%s\n',all_model_name{model_num,1});
         one_train_file_path=[train_file_path  all_model_name{model_num,1} '\'];
-        all_train_file=dir(fullfile(one_train_file_path,'/*.wav'));%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
+        all_train_file=dir(fullfile(one_train_file_path,'/*.wav'));%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓÐÎÄ¼þ
         all_train_feature = [];
         for j=1:length(all_train_file)
-            file_name=all_train_file(j).name;%wavæ–‡ä»¶å
+            file_name=all_train_file(j).name;%wavÎÄ¼þÃû
             train_file=[one_train_file_path file_name];
            % fprintf('  train file:%s\n',train_file);
             [wav_data ,fs]=audioread(train_file);
             train_feature=melcepst(wav_data ,fs);
-            all_train_feature=[all_train_feature;train_feature];%è¿™é‡Œtrain_featureçš„ç»´åº¦ä¸º340*12çš„åŽŸå› ï¼Œä¸»è¦æ˜¯å¯¹è¯­éŸ³è¿›è¡Œåˆ†å¸§å¤„ç†çš„æ—¶å€™çš„æ­¥é•¿é€‰æ‹©æ‰€å†³å®šçš„
+            all_train_feature=[all_train_feature;train_feature];
         end
-        dirName=['.\model\' all_model_name{model_num,1} '\'];%åˆå§‹çš„model_numä¸º1
-        [mu_model,sigma_model,weight_model]=gmm_estimate(all_train_feature',GMMM_component);%train_featureçš„ç»´åº¦ä¸º340*12ï¼Œè€Œall_train_featureçš„ç»´åº¦ä¸º1995*12,è¡Œæ•°å‘ˆçŽ°å¤§æ¦‚6å€çš„çŠ¶æ€ï¼Œè¿™æ˜¯å› ä¸ºåœ¨è®­ç»ƒè¯­éŸ³æ¨¡åž‹çš„æ—¶å€™ï¼Œä¸€ä¸ªäººè¾“å…¥äº†6æ¡è¯­éŸ³
+        dirName=['.\model\' all_model_name{model_num,1} '\'];%³õÊ¼µÄmodel_numÎª1
+              
+        %FXY-04################
+        
+        %[mu_model,sigma_model,weight_model]=gmm_estimate(all_train_feature',GMMM_component);
+        map_tau = 10.0;
+        config = 'mwv';
+        map_all_train_feature=cell(1,1);
+        map_all_train_feature{1,1}=all_train_feature';
+        map_gmm=mapAdapt( map_all_train_feature, ubm, map_tau, config);
+        mu_model=map_gmm.mu;
+        sigma_model=map_gmm.sigma;
+        weight_model=map_gmm.w;
+       
+        %FXY-04################        
         if ~exist( dirName, 'dir')
             mkdir(dirName);
         end
@@ -48,59 +109,122 @@ for i=1:length(FileList)
 end
 save('.\model\all_model_name.mat','all_model_name');
 
-all_model_name=importdata('.\model\all_model_name.mat');%ä»Žä¸Šé¢è®­ç»ƒæ•°æ®æ—¶ä¿å­˜çš„æ¨¡åž‹æ–‡ä»¶ä¿¡æ¯ä¸­è¯»å–æ¨¡åž‹æ–‡ä»¶ä¿¡æ¯
+all_model_name=importdata('.\model\all_model_name.mat');%´ÓÉÏÃæÑµÁ·Êý¾ÝÊ±±£´æµÄÄ£ÐÍÎÄ¼þÐÅÏ¢ÖÐ¶ÁÈ¡Ä£ÐÍÎÄ¼þÐÅÏ¢
 model_num=length(all_model_name);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+T = clock; 
+disp([num2str(T(4)),':',num2str(T(5)),':',num2str(T(6))]);
 
-%test
-FileList=dir(test_file_path);%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
-%è¯¥è·¯å¾„ä¸‹æ˜¯å¦æ˜¯æ–‡ä»¶å¤¹
+%FXY-06################
+ut_gmm=cell(model_num,1);
+mydata=zeros(270,1);
+%FXY-06################
+
+
+%test1
+FileList=dir(test_file_path);%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓÐÎÄ¼þ
+
+
+%¸ÃÂ·¾¶ÏÂÊÇ·ñÊÇÎÄ¼þ¼Ð
 for i=1:length(FileList)
     if(FileList(i).isdir==1&&~strcmp(FileList(i).name,'.')&&~strcmp(FileList(i).name,'..'))
         test_name=FileList(i).name;
         one_test_file_path=[test_file_path  test_name '\'];
-        all_test_file=dir(fullfile(one_test_file_path,'/*.wav'));%è¯»å–è¯¥è·¯å¾„ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
-        %fprintf('æµ‹è¯•ç±»åž‹ï¼š%s\n',test_name);
+        all_test_file=dir(fullfile(one_test_file_path,'/*.wav'));%¶ÁÈ¡¸ÃÂ·¾¶ÏÂµÄËùÓÐÎÄ¼þ
+        %fprintf('²âÊÔÀàÐÍ£º%s\n',test_name);
         for j=1:length(all_test_file)
-            file_name=all_test_file(j).name;%wavæ–‡ä»¶å
+            file_name=all_test_file(j).name;%wavÎÄ¼þÃû
             test_file=[one_test_file_path file_name];
             [wav_data ,fs]=audioread(test_file);
-            test_feature=melcepst(wav_data ,fs);%ä¸Šé¢çš†æ˜¯ä¸Žè®­ç»ƒæ¨¡åž‹æ—¶åŒæ ·çš„æ“ä½œ
-            %fprintf('Testï¼š%s\n',test_file);
-            for k=1:model_num%æ˜¯ä¸Šè¿°è®­ç»ƒæ•°æ®æ—¶èŽ·å¾—çš„æ¨¡åž‹ä¸ªæ•°
+            test_feature=melcepst(wav_data ,fs);%ÉÏÃæ½ÔÊÇÓëÑµÁ·Ä£ÐÍÊ±Í¬ÑùµÄ²Ù×÷
+            %fprintf('Test£º%s\n',test_file);
+            for k=1:model_num%ÊÇÉÏÊöÑµÁ·Êý¾ÝÊ±»ñµÃµÄÄ£ÐÍ¸öÊý
                 model_path=['.\model\' all_model_name{k,1} '\'];
                 mu_model=importdata([model_path 'mu_model.mat']);
                 sigma_model=importdata([model_path 'sigma_model.mat']);
                 weight_model=importdata([model_path 'weight_model.mat']);
-                [lYM, lY] = lmultigauss(test_feature', mu_model, sigma_model, weight_model);%test_feature'è¡¨çŸ©é˜µè½¬ç½®
-                score(j,k) = mean(lY);%è¿”å›žåŒ…å«æ¯åˆ—å‡å€¼çš„è¡Œå‘é‡(è¯¥æ¡è¯­éŸ³å¯¹ç¬¬kä¸ªæ¨¡åž‹çš„æ‰“åˆ†)
-                %è®­ç»ƒåº“é‡Œæœ‰44ä¸ªäººçš„æ¨¡åž‹ï¼Œä¸€ä¸ªæµ‹è¯•æ–‡ä»¶ä¸‹æœ‰18æ¡è¯­éŸ³(æœ‰ä¸‰ä¸ªäººï¼Œæ¯äºº6æ¡è¯­éŸ³)
-                % fprintf('Model:%s  score:%f\n',all_model_name{k,1},score(j,k));
+                %FXY-05################
+                gmm_struct = struct('w',weight_model,'mu',mu_model,'sigma',sigma_model);              
+                ut_gmm{k,1}=gmm_struct;
+                %FXY-05################
+                [lYM, lY] = lmultigauss(test_feature', mu_model, sigma_model, weight_model');%test_feature'±í¾ØÕó×ªÖÃ
+                score(j,k) = mean(lY);%·µ»Ø°üº¬Ã¿ÁÐ¾ùÖµµÄÐÐÏòÁ¿(¸ÃÌõÓïÒô¶ÔµÚk¸öÄ£ÐÍµÄ´ò·Ö)
+                %ÑµÁ·¿âÀïÓÐ44¸öÈËµÄÄ£ÐÍ£¬Ò»¸ö²âÊÔÎÄ¼þÏÂÓÐ18ÌõÓïÒô(ÓÐÈý¸öÈË£¬Ã¿ÈË6ÌõÓïÒô)
+                % fprintf('Model:%s  score:%f\n',all_model_name{k,1},score(j,k));          
             end
-            [max_score,max_id]=max(score(j,:));
-            %fprintf('MAX------%s\n',all_model_name{max_id,1});
-            if(~strcmp(all_model_name{max_id,1},'3140102441-W1'))
-                error_num = error_num + 1;
-                error_file{error_num,1} = all_model_name{max_id,1};
-                error_file_m{error_num,1} = test_file;
-                error_file_score(error_num) = max_score;
-                error_file_score_m(error_num) = score(j,15);
+            
+            %FXY-07################
+            ut_gmmScores=zeros(9,1);
+            ut_nSpeakerstest=1;
+            ut_nChannels=1;
+            ut_test_feature=cell(1,1);
+            ut_test_feature{1,1}=test_feature';
+            nSpeakers=model_num;
+            ut_trials = zeros(ut_nSpeakerstest*ut_nChannels*model_num, 2);
+            answers = zeros(ut_nSpeakerstest*ut_nChannels*nSpeakers, 1);
+            for ix = 1 : nSpeakers
+            b = (ix-1)*ut_nSpeakerstest*ut_nChannels + 1;
+            e = b + ut_nSpeakerstest*ut_nChannels - 1;
+            ut_trials(b:e, :) = [ix * ones(ut_nSpeakerstest*ut_nChannels, 1),(1:ut_nSpeakerstest*ut_nChannels)'];
+            answers((ix-1)*ut_nChannels+b : (ix-1)*ut_nChannels+b+ut_nChannels-1) = 1;
             end
+            ut_gmmScores = score_gmm_trials(ut_gmm, reshape(ut_test_feature, ut_nSpeakerstest*ut_nChannels,1), ut_trials, ubm);
+            ut_gmmScores=reshape(ut_gmmScores,nSpeakers*ut_nChannels, ut_nSpeakerstest);
+            [val, idx] = max(ut_gmmScores);
+            a=all_model_name{idx,1};
+            fprintf('\n Identified Speaker is %s \n', a);
+            mydata((i-2)*18+j,1)=val;
+            if(strcmp(a,'3140102441-W1'))
+              
+               correct_num=correct_num+1;
+            end
+            
+            %FXY-07################
+            
+            %FXY-03################
+%             [max_score,max_id]=max(score(j,:));
+%             if(max_score>-21)
+%                  fprintf('PEOPLE:%s\n',all_model_name{max_id,1});
+%                  fprintf('SCORE:%s\n',max_score);
+%             else
+%                 fprintf('UNKNOWN:%s\n',test_file);
+%             
+%             end
+%             
+%             if(~strcmp(all_model_name{max_id,1},'3140102441-W1'))
+%               error_num = error_num + 1;
+%                error_file{error_num,1} = all_model_name{max_id,1};
+%                error_file_m{error_num,1} = test_file;
+%                error_file_score(error_num) = max_score;
+%                error_file_score_m(error_num) = score(j,15);
+%             
+%             else
+%                correct_num=correct_num+1;
+%             end
+            %FXY-03################
+            
+            
             %fprintf('MAX------%s\n',all_model_name{max_id,1});
             
-        end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %result
-        [max_score,max_id]=max(score(:,k));
-        [min_score,min_id]=min(score(:,k));
-        %fprintf('Max score:%f  file:%s\nMin score:%f  file:%s\n\n',max_score,all_test_file(max_id).name,min_score,all_test_file(min_id).name);
+         end
+%         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%         %result
+%         [max_score,max_id]=max(score(:,k));
+%         [min_score,min_id]=min(score(:,k));
+%         %fprintf('Max score:%f  file:%s\nMin score:%f  file:%s\n\n',max_score,all_test_file(max_id).name,min_score,all_test_file(min_id).name);
     end
 end
+T = clock; 
+disp([num2str(T(4)),':',num2str(T(5)),':',num2str(T(6))]);
 
+fprintf('Total Correct Number = %d\n',correct_num);
+error_num=270-correct_num;
 fprintf('Total Error Number = %d\n',error_num);
-accuracy = 1 - error_num/264;
+accuracy = 1 - error_num/270;
 fprintf('CorrectRate = %f\n',accuracy);
+%FXY-02################
 
-for t=1:error_num
-    fprintf('%s : %f    %s : %f\n',error_file_m{t,1},error_file_score_m(t), error_file{t,1}, error_file_score(t));
-end
+
+% for t=1:error_num
+%     fprintf('%s : %f    %s : %f\n',error_file_m{t,1},error_file_score_m(t), error_file{t,1}, error_file_score(t));
+% end
