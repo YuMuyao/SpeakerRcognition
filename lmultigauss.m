@@ -19,7 +19,7 @@ Sigm=permute(repmat(sigm,[1,1,T]),[3,2,1]); % (L,M) -> (T,M,L)
 Mu=permute(repmat(mus,[1,1,T]),[3,2,1]);     % (L,M) -> (T,M,L)
 
 %Y=squeeze(exp( 0.5.*dot(X-Mu,(X-Mu)./Sigm))); % L dissapears: (L,T,M) -> (T,M)
-lY=-0.5.*dot(X-Mu,(X-Mu)./Sigm,3);%C = dot(A,B,dim) 计算 A 和 B 沿维度 dim 的点积。dim 输入是一个正整数标量。
+lY=-0.5.*dot(X-Mu,(X-Mu)./Sigm,3);
 
 % c,const -> (T,M) and then multiply by old Y
 lcoi=log(2.*pi).*(L./2)+0.5.*sum(log(sigm),1); % c,const -> (T,M)
